@@ -29,7 +29,8 @@ TMP_PATH = '/tmp/onefold_mongo'
 HDFS_PATH = 'onefold_mongo'
 HADOOP_MAPREDUCE_STREAMING_LIB = "/usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar"
 ONEFOLD_MAPREDUCE_JAR = os.getcwd() + "/java/MapReduce/target/MapReduce-0.0.1-SNAPSHOT.jar"
-ONEFOLD_HIVESERDES_JAR = os.getcwd() + "/java/HiveSerdes/target/hive-serdes-1.0-SNAPSHOT.jar"
+# ONEFOLD_HIVESERDES_JAR = os.getcwd() + "/java/HiveSerdes/target/hive-serdes-1.0-SNAPSHOT.jar"
+ONEFOLD_HIVESERDES_JAR = "/tmp/hive-serdes-1.0-SNAPSHOT.jar"
 
 # default mapreduce params
 mapreduce_params = {}
@@ -71,7 +72,7 @@ class Loader:
   schema_db_name = None
   schema_collection_name = None
   use_mr = False
-  hiveserveer_host = None
+  hiveserver_host = None
   hiveserver_port = None
 
   write_disposition = None
@@ -113,7 +114,7 @@ class Loader:
       self.mongo_schema_collection.remove({})
 
     # create data warehouse object
-    self.dw = Hive(self.hiveserveer_host, self.hiveserver_port, ONEFOLD_HIVESERDES_JAR)
+    self.dw = Hive(self.hiveserver_host, self.hiveserver_port, ONEFOLD_HIVESERDES_JAR)
 
     # turn policies into better data structure for use later (required_fields)
     if self.policies != None:
@@ -368,10 +369,13 @@ class Loader:
 
 
   def load_dw (self):
-
+    print "Loading dw"
+    
+    print "Retrieving schema fields from mongodb schema collection"
     # retrieve schema fields from mongodb schema collection
     schema_fields = self.retrieve_schema_fields()
 
+    print "Creating tables in dw"
     # create tables
     if self.write_disposition == 'overwrite':
       if self.dw.table_exists(self.dw_database_name, self.dw_table_name):
@@ -384,6 +388,7 @@ class Loader:
       else:
         self.dw_table_names = self.dw.create_table(self.dw_database_name, self.dw_table_name, schema_fields, self.process_array)
 
+    print "Loading data in dw tables"
     # load data
     fragment_values = self.get_fragments()
 
@@ -456,7 +461,7 @@ def main():
   parser.add_argument('--write_disposition', metavar='write_disposition', type=str,
                       help='overwrite or append. Default is overwrite', default='overwrite', choices=['overwrite', 'append'])
   parser.add_argument('--hiveserver_host', metavar='hiveserver_host', type=str, required=True, help='Hiveserver host')
-  parser.add_argument('--hiveserver_port', metavar='hiveserver_port', type=str, required=True, help='Hiveserver port')
+  parser.add_argument('--hiveserver_port', metavar='hiveserver_port', type=int, required=True, help='Hiveserver port')
   parser.add_argument('--hive_db_name', metavar='hive_db_name', type=str,
                       help='Hive database name. If not provided, default to \'default\' hive database.')
   parser.add_argument('--hive_table_name', metavar='hive_table_name', type=str,

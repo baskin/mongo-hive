@@ -78,20 +78,20 @@ class Hive(DataWarehouse):
   hive_serdes_path = None
 
   def __init__(self, host, port, hive_serdes_path):
-    print '-- Initializing Hive Util --'
+    print '-- Initializing Hive Util with %s:%s --' % (host, port)
     self.host = host
     self.port = port
     self.hive_serdes_path = hive_serdes_path
 
   def execute_sql (self, database_name, sql, fetch_result = False):
     import pyhs2
-    conn = pyhs2.connect(host=self.host, port=self.port, authMechanism="NOSASL", database='default')
-
+    conn = pyhs2.connect(host=self.host, port=self.port, authMechanism="PLAIN", user="hdfs", password="", database='default', timeout=5000)
+    print "Connected to hiverserver2"
     # turn on tez and add serde jar
     c = conn.cursor()
     c.execute("set hive.execution.engine=tez")
     c.execute("set hive.cache.expr.evaluation=false")
-    c.execute("add jar %s" % self.hive_serdes_path)
+    # c.execute("add jar %s" % self.hive_serdes_path)
 
     if database_name != None:
       c.execute("use %s" % database_name)
@@ -128,7 +128,7 @@ class Hive(DataWarehouse):
       if field['data_type'] == 'string':
         data_type = 'string'
       elif field['data_type'] in ('timestamp', 'boolean'):
-        data_type = field['type']
+        data_type = field['data_type']
       elif field['data_type'] == 'float':
         data_type = 'double'
       elif field['data_type'] ==  'integer':
